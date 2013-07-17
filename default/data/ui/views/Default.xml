@@ -1,0 +1,154 @@
+<view refresh="300" template="dashboard.html">
+  <label>CEFly Event Dashboard</label>
+  <module name="AccountBar" layoutPanel="appHeader"/>
+  <module name="AppBar" layoutPanel="navigationHeader"/>
+  <module name="Message" layoutPanel="messaging">
+    <param name="filter">*</param>
+    <param name="clearOnJobDispatch">False</param>
+    <param name="maxSize">1</param>
+  </module>
+
+  <!--
+  <module name="StaticContentSample" layoutPanel="panel_row1_col1">
+    <param name="text"><![CDATA[
+      <h1>Example 1: A Basic Application</h1>
+        <p>  
+          This simple application searches the metrics log and lists the CPU utilization of each indexer stage, for the last seven days.
+        </p>
+        <p>
+          Search string:  <tt>index=_internal source=*metrics.log group=pipeline | stats sum(cpu_seconds) as totalCPU by name</tt>
+        </p>
+        <p>
+          Results are displayed using the <tt>SimpleResultsTable</tt> module.
+        </p>
+    ]]></param>
+  </module>
+  -->
+
+  <module name="StaticContentSample" autoRun="True" layoutPanel="panel_row1_col1">
+    <param name="text"><![CDATA[
+
+      <h1>CEFly Event Dashboard</h1>
+
+    ]]></param>
+   </module>
+
+   <module name="HiddenSearch" autoRun="True" layoutPanel="panel_row2_col1">
+    <param name="search">index=_internal source=*cefly* cefly_metrics | timechart sum(events_sent) by cefly_app</param>
+    <param name="earliest">-24h</param>
+    <param name="latest">now</param>
+    
+    <module name="HiddenChartFormatter">
+      <param name="chart">line</param>
+      <param name="primaryAxisTitle.text">Time</param>
+      <param name="legend.placement">bottom</param>
+      <param name="chartTitle">Events Sent by Search Past 24 Hours</param>
+      
+      <module name="JobProgressIndicator"/>
+      <module name="JSChart"/>
+      
+    </module>
+  </module>
+
+  <module name="HiddenSearch" autoRun="True" layoutPanel="panel_row3_col1">
+    <param name="search">index=_internal source=*cefly* cefly_metrics | timechart sum(events_sent) by cefly_app usenull=f</param>
+    <param name="earliest">rt-1h</param>
+    <param name="latest">rt</param>
+    
+    <module name="HiddenChartFormatter">
+      <param name="charting.chart">area</param>
+      <param name="charting.primaryAxisTitle.text">Time</param>
+      <param name="charting.legend.placement">bottom</param>
+      <!-- <param name="charting.nullValueMode">zero</param> -->
+      <param name="charting.chartTitle">Events Sent by Search Last Hour</param>
+      
+      <module name="JobProgressIndicator"/>
+      <module name="JSChart"/>
+      
+    </module>
+  </module>
+
+  <module name="HiddenSearch" autoRun="True" layoutPanel="panel_row3_col2">
+    <param name="search">index=_internal source=*cefly* cefly_metrics | stats sum(events_sent) by cefly_app</param>
+    <param name="earliest">rt-1m</param>
+    <param name="latest">rt</param>
+    
+    <module name="HiddenChartFormatter">
+      <param name="chart">bar</param>
+
+      <param name="primaryAxisTitle.text">Events Sent</param>
+      <param name="legend.placement">none</param>
+      <param name="chartTitle">Events Sent Past Minute</param>
+      
+      <module name="JobProgressIndicator"/>
+      <module name="JSChart"/>
+      
+    </module>
+  </module>
+
+  <module name="HiddenSearch" autoRun="True" layoutPanel="panel_row4_col1">
+    <param name="search">index=_internal source=*cefly* ERROR | timechart count</param>
+    <param name="earliest">-4h</param>
+    <param name="latest">now</param>
+    
+    <module name="HiddenChartFormatter">
+
+      <param name="chart">line</param>
+      <param name="primaryAxisTitle.text">Time</param>
+      <param name="legend.placement">bottom</param>
+      <param name="chartTitle">Errors past 4 hours</param>
+      
+      <module name="JobProgressIndicator"/>
+      <module name="JSChart"/>
+      
+    </module>
+  </module>
+
+  <module name="HiddenSearch" autoRun="True" layoutPanel="panel_row4_col2">
+    <param name="search">index=_internal source=*cefly* ERROR | stats count by message, reason | sort -count</param>
+    <param name="earliest">-24h</param>
+    <param name="latest">now</param>
+    
+    <module name="SimpleResultsTable"></module>
+      
+  </module>
+
+  <module name="HiddenSearch" autoRun="True" layoutPanel="panel_row5_col1">
+    <param name="search">index=_internal source=*cefly* syslog message="connection closed" | eval mb = bytes_sent / 1024 / 1024 | timechart sum(mb) by destination_host</param>
+    <param name="earliest">rt-4h</param>
+    <param name="latest">rt</param>
+    
+    <module name="HiddenChartFormatter">
+      <param name="chart">area</param>
+      <param name="charting.nullValueMode">zero</param>
+      <param name="primaryAxisTitle.text">Time</param>
+      <param name="charting.axisTitleY.text">MB</param>
+      <param name="legend.placement">bottom</param>
+      <param name="chartTitle">Data Sent Past 4 Hours</param>
+      
+      <module name="JobProgressIndicator"/>
+      <module name="JSChart"/>
+      
+    </module>
+  </module>
+
+  <module name="HiddenSearch" autoRun="True" layoutPanel="panel_row5_col2">
+    <param name="search">index=_internal source=*cefly* syslog message="connection closed" | eval mb = bytes_sent / 1024 / 1024 | timechart span=1d sum(mb) by destination_host usenull=f</param>
+    <param name="earliest">-7d</param>
+    <param name="latest">now</param>
+    
+    <module name="HiddenChartFormatter">
+      <param name="chart">column</param>
+      <param name="charting.nullValueMode">zero</param>
+      <param name="primaryAxisTitle.text">Time</param>
+      <param name="charting.axisTitleY.text">MB</param>
+      <param name="legend.placement">bottom</param>
+      <param name="chartTitle">Data Sent Past 7 Days</param>
+      
+      <module name="JobProgressIndicator"/>
+      <module name="JSChart"/>
+      
+    </module>
+  </module>
+  
+</view>

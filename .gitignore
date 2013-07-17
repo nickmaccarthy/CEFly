@@ -1,0 +1,6 @@
+## Ignore anything in local/
+
+local/*
+
+## Ignore anything in metadata/
+metadata/*

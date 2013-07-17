@@ -1,0 +1,11 @@
+<view template='outputs.html'>
+
+  <module name="StaticContentSample" autoRun="True" layoutPanel="panel_row1_col1">
+    <param name="text"><![CDATA[
+
+      <h1>Outputs</h1>
+
+    ]]></param>
+   </module>
+
+</view>

@@ -1,0 +1,12 @@
+<nav>
+    <collection label='Dashboards'>
+        <view name='Default' />
+        <view name='Stats' />
+        <view name='Setup' />
+        <view name='Output Mapper' />
+    </collection>
+    <collection label="Outputs">
+        <view name="Outputs" />
+    </collection>
+</nav>
+
