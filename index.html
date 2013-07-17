@@ -34,18 +34,20 @@
           <h2>
 <a name="what-is-cefly" class="anchor" href="#what-is-cefly"><span class="octicon octicon-link"></span></a>What is CEFly?</h2>
 
-<p>CEFly ( pronouced sef lee ) is an app that allows Splunk to output its events in something called "CEF format" via syslog to a receiver such as HP's ArcSight ESM or ArcSight Logger.</p>
+<p>CEFly ( pronounced sef lee ) is an app that allows Splunk to output its events in something called "CEF format" via syslog to a receiver such as HP's ArcSight ESM or ArcSight Logger.</p>
 
 <p>CEF aka "Common Event Format" is a standard derived by ArcSight for the interoperability of logging events between different systems and central logging solutions.  Many vendors output their logs in CEF format and use the standard syslog protocol to send its events to a destination server that supports CEF such as HP's ArcSight. </p>
 
 <h2>
 <a name="why-did-you-make-this" class="anchor" href="#why-did-you-make-this"><span class="octicon octicon-link"></span></a>Why did you make this?</h2>
 
-<p>Splunk is great tool for centeralized log aggregation and reporting; however my company, like many others also utilize SIEM ( Security, Information and Event Monitoring ) tools for daily Security Operations Center (SOC) work.  While Splunk was by far the best logging and reporting tool we had at our disposal, the data in it was too siloed when it came to intergrating it with the SIEM; i.e. there was no good way to export data from Splunk into the SIEM natively without alot of work on the SIEM side of things.  </p>
+<p>Splunk is great tool for centralized log aggregation and reporting; however my company, like many others also utilize SIEM ( Security, Information and Event Monitoring ) tools for daily Security Operations Center (SOC) work.  While Splunk was by far the best logging and reporting tool we had at our disposal, the data in it was too siloed when it came to integrating it with the SIEM; i.e. there was no good way to export data from Splunk into the SIEM natively without alot of work on the SIEM side of things.  </p>
 
-<p>In steps CEFly.  Since the SIEM accpets CEF natively, I figured we could utilze Splunk to tranlate the events inside of it into CEF messages that could be sent via syslog to our SIEM by utilizing the powerful features such Saved Reporting, Alerting, and Scripted Outputs. </p>
+<p>In steps CEFly.  </p>
 
-<p>By utilizing these features, all messages for an etire log source or even down to just specific events can be sent to the SIEM as needed having Splunk act as both a 'filter' and translator for the CEF format.  All you need is a Saved Search with an Alert and a definition in cefly.conf to define and map the Splunk filds to the CEF Fields accordingly and that is it.</p>
+<p>Since the SIEM accepts CEF natively, I figured we could utilize Splunk to translate the events inside of it into CEF messages that could be sent via syslog to our SIEM by utilizing the powerful features such Saved Reporting, Alerting, and Scripted Outputs. </p>
+
+<p>By utilizing these features, all messages for an entire log source or even down to just specific events can be sent to the SIEM as needed having Splunk act as both a 'filter' and translator for the CEF format.  All you need is a Saved Search with an Alert and a definition in cefly.conf to define and map the Splunk fields to the CEF Fields accordingly and that is it.</p>
 
 <h2>
 <a name="how-do-i-use-it" class="anchor" href="#how-do-i-use-it"><span class="octicon octicon-link"></span></a>How do I use it?</h2>
@@ -67,7 +69,7 @@
 
 <ol>
 <li>The label in cefly.conf and savedsearches.conf  must be exact for the log type you want to output.  Check out the example default/cefly.conf and default/savesearches.conf for clarification and how they match up.</li>
-<li>You can do real time searches instead of scheduled searches, however, I find that scheduled searches take up much less resources on the system.  I have tested this with fairly big sources with searches that run every minute with no issues.  Realtime for the same source were causing a pretty noticable performace impact for the same ammount of data.  My suggestion is not use real time unless you absolutely have to for this reason, since at most you your outputted event will be one minute behind which was acceptable for our needs and kept load on the server down considerably.</li>
+<li>You can do real time searches instead of scheduled searches, however, I find that scheduled searches take up much less resources on the system.  I have tested this with fairly big sources with searches that run every minute with no issues.  Realtime for the same source were causing a pretty noticeable performance impact for the same ammount of data.  My suggestion is not use real time unless you absolutely have to for this reason, since at most you your outputted event will be one minute behind which was acceptable for our needs and kept load on the server down considerably.</li>
 <li>CEFly keeps metrics about itself in the _internal index, or under the $SPLUNK_HOME/var/log/splunk/cefly.log file.</li>
 </ol><h2>
 <a name="how-much-testing-have-you-done" class="anchor" href="#how-much-testing-have-you-done"><span class="octicon octicon-link"></span></a>How much testing have you done?</h2>
@@ -78,7 +80,7 @@
 <a name="whats-next" class="anchor" href="#whats-next"><span class="octicon octicon-link"></span></a>Whats next:</h2>
 
 <ol>
-<li>I plan to make a web UI for the configuation/setup of CEFly in the future so we dont have edit/create config files manually</li>
+<li>I plan to make a web UI for the configuration/setup of CEFly in the future so we don't have edit/create config files manually</li>
 <li>More enhancements to the dashboard such as drilldowns, more/prettier graphs etc</li>
 </ol><h2>
 <a name="issues--comments--concerns" class="anchor" href="#issues--comments--concerns"><span class="octicon octicon-link"></span></a>Issues / Comments / Concerns?</h2>
