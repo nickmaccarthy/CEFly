@@ -1,7 +1,3 @@
-Title: CEFly
-Author: Nick MacCarthy
-Email: nickmaccarthy@gmail.com
-
 # CEFly #
 
 What is CEFly?
@@ -67,3 +63,6 @@ If you have any questions, comments or concerns, please get in contact with me. 
 email me: nickmaccarthy@gmail.com
 
 
+Title: CEFly
+Author: Nick MacCarthy
+Email: nickmaccarthy@gmail.com
