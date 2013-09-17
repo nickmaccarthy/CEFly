@@ -210,7 +210,7 @@ if __name__ == "__main__":
         cef_field_map = dict((p.strip().split(':') for p in output['cef_field_map'].split(',')))
 
     except Exception, e:
-        logger.error('message="Unable to load cefly.conf" exception=%s' % (e) )
+        logger.error('message="Unable to load stanzas cefly.conf" exception=%s, cefly_config="%s"' % (e, output) )
         logger.exception(e)
 
     
