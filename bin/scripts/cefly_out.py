@@ -182,6 +182,7 @@ if __name__ == "__main__":
     logging = logger.logger()
     logger = logging.get_logger('cefly')
 
+    logger.info('message=CEFly initialized')
     try:
         parser = optparse.OptionParser()
         (OPTIONS, ARGS) = parser.parse_args()
@@ -208,6 +209,8 @@ if __name__ == "__main__":
         cef_static_map = dict((p.strip().split(':') for p  in output['cef_static_map'].split(',')))
         cef_custom_labels = dict((p.strip().split(':') for p in output['cef_custom_labels'].split(',')))
         cef_field_map = dict((p.strip().split(':') for p in output['cef_field_map'].split(',')))
+
+        logger.info('message="config loaded", config="%s"' % ( output ))
 
     except Exception, e:
         logger.error('message="Unable to load stanzas cefly.conf" exception=%s, cefly_config="%s"' % (e, output) )
@@ -265,6 +268,9 @@ if __name__ == "__main__":
 
         # Now lets send via syslog to our destination
         try:
+            if output['debug'] == 1:
+                logger.info('message=cefly_event format=CEF, CEF="%s"' % ( cef_msg ))
+
             sent_events = syslog.send(cef_msg)
         except Exception, e:
             logger.error('message="Unable to send CEF message via syslog" app="%s" destination_server="%s" destination_port="%s", destination_protocol="%s" reason="%s"' % ( search_name, output_host, output_port, output_protocol, e ))   
