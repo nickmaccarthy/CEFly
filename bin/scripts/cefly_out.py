@@ -210,7 +210,7 @@ if __name__ == "__main__":
         cef_custom_labels = dict((p.strip().split(':') for p in output['cef_custom_labels'].split(',')))
         cef_field_map = dict((p.strip().split(':') for p in output['cef_field_map'].split(',')))
 
-        logger.info('message="config loaded", config="%s"' % ( output ))
+        logger.info('message="config loaded", app_name="%s", config="%s"' % ( search_name, output ))
 
     except Exception, e:
         logger.error('message="Unable to load stanzas cefly.conf" exception=%s, cefly_config="%s"' % (e, output) )
@@ -270,7 +270,7 @@ if __name__ == "__main__":
         try:
 
             try:
-                if output['debug'] == 1:
+                if output['debug']:
                     logger.info('message=cefly_event format=CEF, CEF="%s"' % ( cef_msg ))
             except:
                 pass
