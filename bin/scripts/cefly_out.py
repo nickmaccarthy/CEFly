@@ -268,8 +268,12 @@ if __name__ == "__main__":
 
         # Now lets send via syslog to our destination
         try:
-            if output['debug'] == 1:
-                logger.info('message=cefly_event format=CEF, CEF="%s"' % ( cef_msg ))
+
+            try:
+                if output['debug'] == 1:
+                    logger.info('message=cefly_event format=CEF, CEF="%s"' % ( cef_msg ))
+            except:
+                pass
 
             sent_events = syslog.send(cef_msg)
         except Exception, e:
