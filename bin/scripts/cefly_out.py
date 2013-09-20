@@ -47,6 +47,8 @@ if not os.path.join(APPS_DIR, APP_NAME, 'bin') in sys.path:
 import cefly.syslog as syslog
 import cefly.logger as logger
 
+DEBUG_MODE = False
+
 def load_conf(app):
 
     '''
@@ -143,6 +145,7 @@ def make_cef(data):
     for k,v in custom_labels.iteritems():
         my_cs_maps.append( ( "%s=%s " ) % ( k,v ) )
 
+
     # map our custom cef fields
     my_data = []
     for item in custom_maps:
@@ -169,7 +172,7 @@ def escape_cef_chars(text):
     '''
         escapes those special chars we cannot have in CEF messages
     '''
-    escape_these = '\=\n\r'
+    escape_these = '\=\n\r\\'
 
     for char in escape_these:
         text = text.replace( char, '\\' + char)
@@ -183,6 +186,9 @@ if __name__ == "__main__":
     logger = logging.get_logger('cefly')
 
     logger.info('message=CEFly initialized')
+
+
+
     try:
         parser = optparse.OptionParser()
         (OPTIONS, ARGS) = parser.parse_args()
@@ -212,6 +218,15 @@ if __name__ == "__main__":
 
         logger.info('message="config loaded", app_name="%s", config="%s"' % ( search_name, output ))
 
+        try:
+            if output['debug']:
+                if output['debug'] == "1":
+                    DEBUG_MODE = True
+                    if DEBUG_MODE:
+                        logger.info('message="debug mode on", app="%s"' % ( search_name ) )
+        except:
+            pass
+
     except Exception, e:
         logger.error('message="Unable to load stanzas cefly.conf" exception=%s, cefly_config="%s"' % (e, output) )
         logger.exception(e)
@@ -221,6 +236,11 @@ if __name__ == "__main__":
     cef_static_set = set(cef_static_map)
     cef_label_set = set(cef_custom_labels)
     cef_field_set = set(cef_field_map)
+
+    if DEBUG_MODE:
+        logger.info('message="cef_field_set" set="%s"' % ( cef_field_set ))
+        logger.info('message="cef_static_set" set="%s"' % ( cef_static_set ))
+        logger.info('message="cef_label_set" set="%s"' % ( cef_label_set ))
 
     # set up our syslog class
     try:
@@ -235,6 +255,7 @@ if __name__ == "__main__":
     except Exception, e:
         logger.error('message="Unable to open results.csv.gz for reading" csv_location="%s", exception="%s"' % ( search_results, e ))
 
+       
 
     # loop through the results, map our cef fields from cefly.conf, and CEF out each message via syslog to our destination server
 
@@ -242,6 +263,9 @@ if __name__ == "__main__":
     no_count = 0
 
     for row in reader:
+
+        if DEBUG_MODE:
+            logger.info('message="CSV Row" row="%s"' % ( row ))
 
         our_map = []
         row_keys = row.keys()
@@ -257,11 +281,20 @@ if __name__ == "__main__":
             no_count = no_count + 1
             continue
 
+        if DEBUG_MODE:
+            logger.info( 'message="row details", row_keys="%s", myset="%s"' % ( row_keys, myset ) )
+
+        if DEBUG_MODE:
+            logger.info('message="our intersection", intersection="%s"' % ( intersection ))
+
         # Get your map on 
         for item in intersection:
             our_map.append( { "splunk_field":item, "as_cef_field":cef_field_map[item], "data":row[item] } )
 
         all_mapped = { "prefix_map":cef_prefix_map, "static_maps":cef_static_map, "labels":cef_custom_labels, "field_map":our_map, 'splunk_meta':splunk_meta }
+
+        #if output['debug']:
+                #logger.info('message="mapped var", var="%s"' % ( all_mapped ))
 
         # Lets make our CEF msg 
         cef_msg = make_cef(all_mapped)
@@ -269,11 +302,8 @@ if __name__ == "__main__":
         # Now lets send via syslog to our destination
         try:
 
-            try:
-                if output['debug']:
-                    logger.info('message=cefly_event format=CEF, CEF="%s"' % ( cef_msg ))
-            except:
-                pass
+            if DEBUG_MODE:
+                logger.info('message=cefly_event format=CEF, CEF="%s"' % ( cef_msg ))
 
             sent_events = syslog.send(cef_msg)
         except Exception, e:
