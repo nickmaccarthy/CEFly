@@ -30,9 +30,10 @@ import csv
 import gzip
 import random
 import hashlib
+import pprint
 
 APPS_DIR = app_util.get_apps_dir()
-APP_NAME = 'cefly'
+APP_NAME = os.path.split(os.path.abspath(os.path.join(__file__, '../', '../', '../')))[1]
 APP_PATH = os.path.join(APPS_DIR, APP_NAME)
 
 #find out cefly.conf in <app>/local
@@ -56,30 +57,55 @@ def load_conf(app):
     '''
 
     try:
-        output = splunk.clilib.cli_common.getConfStanza(CEFLY_OUTPUTS, app)
+        stanza = splunk.clilib.cli_common.getConfStanza(CEFLY_OUTPUTS, app)
     except Exception, e:
         logger.error('message="Unable to open stanza in cefly.conf for app/search", app="%s"' % app)
-        logger.exception(e)
+        sys.exit()
 
-    return output
+    # If we are inheriting from another stanza, lets load it and combine the two stanzas together
+    if 'inherits' in stanza:
 
-def make_transid():
+        try:
 
-    '''
-        Sets a 'transaction id' so we can track the entire cefly run as one transaction in the logs.  
-    '''
-    ip = socket.gethostbyname(socket.gethostname())
-    random_num = random.randrange(0, 10000, 5)
-    rightnow = time.strftime("%Y-%m-%d %H:%M:%S %Z")
+            inherited = load_conf( stanza['inherits'] )
+            stanza = _dmerge(inherited,stanza) 
 
-    hash_this = "%s%s%s" % ( rightnow, ip, random_num )
-    m = hashlib.sha1( hash_this ).hexdigest()
+        except Exception, e:
+            logger.error("Unable to load inherited stanza: %e" % (e))
+            logger.exception(e)
 
-    return m
+
+
+    # We have have a disabled config, no need to go any further
+    if 'disabled' in stanza:
+        if stanza['disabled'].lower() in ('1','true'):
+            logger.info('message="loading a configuration for a disabled app/stanza, will now exit", app="%s"' % ( app ))
+            sys.exit()
+
+    return stanza
+
+def _dmerge(d1, d2):
+    c = d1.copy()
+    c.update(d2)
+    return c
 
 
 def make_cef(data):
 
+    ''' 
+        
+        Returns a formatted CEF message based on data given
+
+
+        What a CEF message should look like:
+
+        CEF:0|<device_vendor>|<device_product>|<device_version>|<signature_id>|<name>|<severity>|key=value, foo=bar, baz=bing
+        
+        Example:
+
+        CEF:0|CISCO|ASA|7||Firewall Accept|1|src=192.168.1.20, dst=10.18.40.50, dport=53, proto=DNS,categoryDeviceGroup:/Network, categoryOutcome:/Success
+
+    '''
     prefix_maps = data['prefix_map']
     custom_maps = data['field_map']
     custom_labels = data['labels']
@@ -106,7 +132,9 @@ def make_cef(data):
        cef_prefix.append(str(prefix_maps['d_version']))
 
     if not 'sig_id' in prefix_maps.keys():
-       cef_prefix.append("100000")
+       cef_prefix.append("1")
+    elif prefix_maps['sig_id'] == '""':
+        cef_prefix.append("")
     else:
        cef_prefix.append(prefix_maps['sig_id'])
 
@@ -146,22 +174,22 @@ def make_cef(data):
         my_cs_maps.append( ( "%s=%s " ) % ( k,v ) )
 
 
-    # map our custom cef fields
-    my_data = []
+    # map our custom cef fields, this would be the splunk_field => arcsight_field mapping
+    my_maps = []
     for item in custom_maps:
 
         if item['data']:
-            my_data.append( ( "%s=%s ") % ( item['as_cef_field'], escape_cef_chars(item['data']) ) )
+            my_maps.append( ( "%s=%s ") % ( item['as_cef_field'], escape_cef_chars(item['data']) ) )
 
     # for debugging
-    if not my_data:
+    if not my_maps:
         logger.error( 'message="not everything is here", custom_maps="%s", my_s_maps="%s", my_cs_maps="%s"' % ( custom_maps, my_s_maps, my_cs_maps ) )
 
         #  If we were not able to map our custom CEF fields, then there was an issue
         return False
 
     try:
-        cef_msg = "|".join(cef_prefix) + " ".join(my_cs_maps) + " ".join(my_s_maps) + " ".join(my_data)
+        cef_msg = "|".join(cef_prefix) + " ".join(my_cs_maps) + " ".join(my_s_maps) + " ".join(my_maps)
     except Exception, e:
         logger.error('message="Unable to create CEF message", cef_prefix="%s", cs_maps="%s", s_maps="%s", my_data="%s"' % ( cef_prefix, my_cs_maps, my_s_maps, my_data ))
 
@@ -183,11 +211,9 @@ def escape_cef_chars(text):
 if __name__ == "__main__":
 
     logging = logger.logger()
-    logger = logging.get_logger('cefly')
+    logger = logging.get_logger('CEFly')
 
-    logger.info('message=CEFly initialized')
-
-
+    logger.info('message="CEFly initialized"')
 
     try:
         parser = optparse.OptionParser()
@@ -195,32 +221,33 @@ if __name__ == "__main__":
         search_name = ARGS[3]
         search_results = ARGS[7]
     except Exception, e:
-        logger.error("Unable to arguments for search_name and search result location: %s" % (e) )
+        logger.error('message"Unable to arguments for search_name and search result location: %s"' % (e) )
 
     try:
 
-        output = load_conf(search_name)
-        output_host = output['output_host']
-        output_port = int(output['output_port'].strip())
-        output_protocol = output['output_protocol']
-        device_vendor = output['device_vendor']
-        device_product = output['device_product']
-        device_version = output['device_version']
-        signature_id = output['signature_id']
-        name = output['name']
-        severity = output['severity']
+        conf = load_conf(search_name)
 
-        cef_prefix_map = { "d_vendor":device_vendor, "d_product":device_product, "d_version":device_version, "sig_id":signature_id, "name":name, "severity":severity }
+        conf_host = conf['output_host']
+        conf_port = int(conf['output_port'].strip())
+        conf_protocol = conf['output_protocol']
+        conf_device_vendor = conf['device_vendor']
+        conf_device_product = conf['device_product']
+        conf_device_version = conf['device_version']
+        conf_signature_id = conf['signature_id']
+        conf_name = conf['name']
+        conf_severity = conf['severity']
 
-        cef_static_map = dict((p.strip().split(':') for p  in output['cef_static_map'].split(',')))
-        cef_custom_labels = dict((p.strip().split(':') for p in output['cef_custom_labels'].split(',')))
-        cef_field_map = dict((p.strip().split(':') for p in output['cef_field_map'].split(',')))
+        cef_prefix_map = { "d_vendor":conf_device_vendor, "d_product":conf_device_product, "d_version":conf_device_version, "sig_id":conf_signature_id, "name":conf_name, "severity":conf_severity }
 
-        logger.info('message="config loaded", app_name="%s", config="%s"' % ( search_name, output ))
+        cef_static_map = dict((p.strip().split(':') for p  in conf['cef_static_map'].split(',')))
+        cef_custom_labels = dict((p.strip().split(':') for p in conf['cef_custom_labels'].split(',')))
+        cef_field_map = dict((p.strip().split(':') for p in conf['cef_field_map'].split(',')))
+
+        logger.info('message="config loaded", app_name="%s", config="%s"' % ( search_name, conf ))
 
         try:
-            if output['debug']:
-                if output['debug'] == "1":
+            if conf['debug']:
+                if conf['debug'] == "1":
                     DEBUG_MODE = True
                     if DEBUG_MODE:
                         logger.info('message="debug mode on", app="%s"' % ( search_name ) )
@@ -228,10 +255,10 @@ if __name__ == "__main__":
             pass
 
     except Exception, e:
-        logger.error('message="Unable to load stanzas cefly.conf" exception=%s, cefly_config="%s"' % (e, output) )
+        logger.error('message="Unable to load stanza in cefly.conf" exception=%s, app="%s"' % (e, search_name) )
         logger.exception(e)
+        sys.exit()
 
-    
     # sets for cef maps for intersection later  (sets hash and intersect faster than stright dicts)
     cef_static_set = set(cef_static_map)
     cef_label_set = set(cef_custom_labels)
@@ -244,7 +271,7 @@ if __name__ == "__main__":
 
     # set up our syslog class
     try:
-        syslog = syslog.syslog( output_protocol, output_host, output_port, 5, 8, logger )
+        syslog = syslog.syslog( conf_protocol, conf_host, conf_port, 5, 8, logger )
     except Exception, e:
         logger.error('message="Unable to init syslog class" reason="%s"' % ( e ) )
         logger.exception(e)
@@ -287,14 +314,11 @@ if __name__ == "__main__":
         if DEBUG_MODE:
             logger.info('message="our intersection", intersection="%s"' % ( intersection ))
 
-        # Get your map on 
+        # Get out map on 
         for item in intersection:
             our_map.append( { "splunk_field":item, "as_cef_field":cef_field_map[item], "data":row[item] } )
 
         all_mapped = { "prefix_map":cef_prefix_map, "static_maps":cef_static_map, "labels":cef_custom_labels, "field_map":our_map, 'splunk_meta':splunk_meta }
-
-        #if output['debug']:
-                #logger.info('message="mapped var", var="%s"' % ( all_mapped ))
 
         # Lets make our CEF msg 
         cef_msg = make_cef(all_mapped)
@@ -306,7 +330,9 @@ if __name__ == "__main__":
                 logger.info('message=cefly_event format=CEF, CEF="%s"' % ( cef_msg ))
 
             sent_events = syslog.send(cef_msg)
+
         except Exception, e:
+
             logger.error('message="Unable to send CEF message via syslog" app="%s" destination_server="%s" destination_port="%s", destination_protocol="%s" reason="%s"' % ( search_name, output_host, output_port, output_protocol, e ))   
             logger.exception(e)
 

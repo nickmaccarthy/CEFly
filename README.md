@@ -40,6 +40,7 @@ Things you should know:
 1. The label in cefly.conf and savedsearches.conf  must be exact for the log type you want to output.  Check out the example default/cefly.conf and default/savesearches.conf for clarification and how they match up.
 2. You can do real time searches instead of scheduled searches, however, I find that scheduled searches take up much less resources on the system.  I have tested this with fairly big sources with searches that run every minute with no issues.  Realtime for the same source were causing a pretty noticeable performance impact for the same ammount of data.  My suggestion is not use real time unless you absolutely have to for this reason, since at most you your outputted event will be one minute behind which was acceptable for our needs and kept load on the server down considerably.
 3. CEFly keeps metrics about itself in the _internal index, or under the $SPLUNK_HOME/var/log/splunk/cefly.log file.
+4. You can inherit from other stanzas in cefly.conf.  This is very useful if need to keep the field maps, output hosts/ports, etc, the same across many CEFly outputs.  See default/cefly.conf for more details
 
 How much testing have you done?
 ------------------------------------
