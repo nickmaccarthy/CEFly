@@ -10,13 +10,11 @@ Why did you make this?
 ------------------------------------
 
 
-Splunk is great tool for centralized log aggregation and reporting; however my company, like many others also utilize SIEM ( Security, Information and Event Monitoring ) tools for daily Security Operations Center (SOC) work.  While Splunk was by far the best logging and reporting tool we had at our disposal, the data in it was too siloed when it came to integrating it with the SIEM; i.e. there was no good way to export data from Splunk into the SIEM natively without alot of work on the SIEM side of things.  
+Splunk is great tool for centralized log aggregation and reporting; however my company, like many others also utilize a SIEM ( Security, Information and Event Monitoring ) tool for daily Security Operations Center (SOC) work.  While Splunk was by far the best logging and reporting tool we had at our disposal, the data in it was siloed when it came to integrating it with the SIEM. There was no good way to export data from Splunk into the SIEM natively without alot of work on the SIEM side of things.  
+ 
+Since the SIEM accepts CEF messages natively, I figured we could utilize Splunk to translate Splunk events into CEF messages that could be sent via syslog to our SIEM by utilizing the powerful Splunk features such as Saved Reporting, Alerting, and Scripted Outputs. 
 
-In steps CEFly.  
-
-Since the SIEM accepts CEF natively, I figured we could utilize Splunk to translate the events inside of it into CEF messages that could be sent via syslog to our SIEM by utilizing the powerful features such Saved Reporting, Alerting, and Scripted Outputs. 
-
-By utilizing these features, all messages for an entire log source or even down to just specific events can be sent to the SIEM as needed having Splunk act as both a 'filter' and translator for the CEF format.  All you need is a Saved Search with an Alert and a definition in cefly.conf to define and map the Splunk fields to the CEF Fields accordingly and that is it.
+In this fashion, all messages for an entire log source or even down to just specific events can be sent to the SIEM as needed having Splunk act as both a 'filter' and translator for the CEF format.  All you need is a Saved Search with an Alert and a definition in cefly.conf to define and map the Splunk fields to the CEF Fields accordingly and that is it.
 
 
 How do I use it?
@@ -25,7 +23,7 @@ How do I use it?
 1. Download and extract this app and its contents to $SPLUNK_HOME/etc/apps
 2. Copy the savedsearches.conf from default into local/savedsearches.conf
 3. Copy cefly.conf from default/cefly.conf to local/cefly.conf
-4. Create or modify a new entry in local/savedsearches.conf for the search you wish to run to get the events you want CEFly out
+4. Create or modify a new entry in local/savedsearches.conf for the search you wish to run to get the events you want CEFly out, or use the Splunk GUI and save the search under the CEFly app context
 5. Create a new entry or modify an example in local/cefly.conf with a label name the same as your saved search from above
 6. Define your cefly outputs, use the example provided from default/cefly.conf for clarification
 
