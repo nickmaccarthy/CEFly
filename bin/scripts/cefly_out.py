@@ -85,6 +85,11 @@ def load_conf(app):
     return stanza
 
 def _dmerge(d1, d2):
+
+    '''
+        Merges two dictionaries into one
+    '''
+
     c = d1.copy()
     c.update(d2)
     return c
@@ -243,8 +248,6 @@ if __name__ == "__main__":
         cef_custom_labels = dict((p.strip().split(':') for p in conf['cef_custom_labels'].split(',')))
         cef_field_map = dict((p.strip().split(':') for p in conf['cef_field_map'].split(',')))
 
-        logger.info('message="config loaded", app_name="%s", config="%s"' % ( search_name, conf ))
-
         try:
             if conf['debug']:
                 if conf['debug'] == "1":
@@ -253,6 +256,11 @@ if __name__ == "__main__":
                         logger.info('message="debug mode on", app="%s"' % ( search_name ) )
         except:
             pass
+
+        if DEBUG_MODE:
+            logger.debug('message="config loaded", app_name="%s", config="%s"' % ( search_name, conf ))
+        else:
+            logger.info('message="config loaded", app_name="%s"' % (search_name))
 
     except Exception, e:
         logger.error('message="Unable to load stanza in cefly.conf" exception=%s, app="%s"' % (e, search_name) )
@@ -265,9 +273,9 @@ if __name__ == "__main__":
     cef_field_set = set(cef_field_map)
 
     if DEBUG_MODE:
-        logger.info('message="cef_field_set" set="%s"' % ( cef_field_set ))
-        logger.info('message="cef_static_set" set="%s"' % ( cef_static_set ))
-        logger.info('message="cef_label_set" set="%s"' % ( cef_label_set ))
+        logger.debug('message="cef_field_set" set="%s"' % ( cef_field_set ))
+        logger.debug('message="cef_static_set" set="%s"' % ( cef_static_set ))
+        logger.debug('message="cef_label_set" set="%s"' % ( cef_label_set ))
 
     # set up our syslog class
     try:
@@ -286,13 +294,13 @@ if __name__ == "__main__":
 
     # loop through the results, map our cef fields from cefly.conf, and CEF out each message via syslog to our destination server
 
-    result_count = 0 
+    sent_count = 0 
     no_count = 0
 
     for row in reader:
 
         if DEBUG_MODE:
-            logger.info('message="CSV Row" row="%s"' % ( row ))
+            logger.debug('message="CSV Row" row="%s"' % ( row ))
 
         our_map = []
         row_keys = row.keys()
@@ -309,10 +317,10 @@ if __name__ == "__main__":
             continue
 
         if DEBUG_MODE:
-            logger.info( 'message="row details", row_keys="%s", myset="%s"' % ( row_keys, myset ) )
+            logger.debug( 'message="row details", row_keys="%s", myset="%s"' % ( row_keys, myset ) )
 
         if DEBUG_MODE:
-            logger.info('message="our intersection", intersection="%s"' % ( intersection ))
+            logger.debug('message="our intersection", intersection="%s"' % ( intersection ))
 
         # Get out map on 
         for item in intersection:
@@ -326,21 +334,26 @@ if __name__ == "__main__":
         # Now lets send via syslog to our destination
         try:
 
-            if DEBUG_MODE:
-                logger.info('message=cefly_event format=CEF, CEF="%s"' % ( cef_msg ))
-
             sent_events = syslog.send(cef_msg)
+
+            sent_count += 1
+
+            if DEBUG_MODE:
+                logger.debug('message=cefly_event format=CEF, CEF="%s"' % ( cef_msg ))
 
         except Exception, e:
 
             logger.error('message="Unable to send CEF message via syslog" app="%s" destination_server="%s" destination_port="%s", destination_protocol="%s" reason="%s"' % ( search_name, output_host, output_port, output_protocol, e ))   
             logger.exception(e)
 
-        result_count = result_count + 1
+    logger.info('sent_count=%s' % ( sent_count))
 
     # log our metrics
-    if sent_events:
-        logger.info('cefly_metrics events_sent=%s no_intersection=%s cefly_app="%s" device_vendor="%s" device_product="%s" cef_name="%s" destination_server="%s" destination_port="%s" destination_protocol="%s"' % ( result_count, no_count, search_name, device_vendor, device_product, name, output_host, output_port, output_protocol) )
-    else: 
-        logger.info('cefly_metrics events_sent=%s no_intersection=%s cefly_app="%s" device_vendor="%s" device_product="%s" cef_name="%s" destination_server="%s" destination_port="%s" destination_protocol="%s"' % ( result_count, no_count, search_name, device_vendor, device_product, name, output_host, output_port, output_protocol) )
-        sys.exit(0)
+    try:
+        if sent_count:
+            logger.info('cefly_metrics events_sent=%s no_intersection=%s cefly_app="%s" device_vendor="%s" device_product="%s" cef_name="%s" destination_server="%s" destination_port="%s" destination_protocol="%s"' % ( sent_count, no_count, search_name, conf_device_vendor, conf_device_product, conf_name, conf_host, conf_port, conf_protocol) )
+        else:
+            logger.info('cefly_metrics messsage="No events sent" cefly_app="%s", device_vendor="%s"' % (search_name, conf_device_vendor))
+    except Exception, e:
+        logger.exception('cefly_metrics message="something went wrong generating output metrics" reason="%s"' % ( e ))
+
